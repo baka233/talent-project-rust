@@ -4,13 +4,14 @@ extern crate log;
 use std::env;
 use std::process::exit;
 use std::net::SocketAddr;
+use log::LevelFilter;
 
 use kvsserver::*;
 use clap::{App, AppSettings, Arg};
 
 
 fn main() -> Result<()> {
-    log::set_logger(&LOGGER)
+    env_logger::builder().filter_level(LevelFilter::Info).init();
     let matches = App::new("kvs-server")
         .version("v1.0")
         .author(env!("CARGO_PKG_AUTHORS"))
@@ -25,7 +26,12 @@ fn main() -> Result<()> {
                 .takes_value(true)
                 .help("select engine in (KvStore, SledKvStore)")
         )
+        .arg(Arg::with_name("VERSION")
+                .short("-V")
+                .help("kvs-server version")
+        )
         .get_matches();
+    
 
     info!("start engine...");
 
@@ -33,14 +39,14 @@ fn main() -> Result<()> {
     info!("bind address at {}", bindaddr.parse::<SocketAddr>().expect("Error format of ipaddress"));
 
     match matches.value_of("ENGINE") {
-        Some("KvStore") | None => {
+        Some("kvs") | None => {
             // start engine
             let engine = KvStore::open(env::current_dir()?)?;
             // Start server and listen
             KvsServer::new(engine).run(bindaddr)?;
             info!("start engine successsful!");
         },
-        Some("SledKvStore") => {
+        Some("sled") => {
             let engine = SledKvStore::new(env::current_dir()?)?;
             KvsServer::new(engine).run(bindaddr)?;
             info!("start engine successsful!");
