@@ -1,6 +1,6 @@
 #[macro_use] extern crate log;
 
-pub use engine::{KvStore, KvsEngine};
+pub use engine::{KvStore, KvsEngine, SledKvStore};
 pub use client::KvsClient;
 pub use server::KvsServer;
 pub use errors::{Result, KvsError};

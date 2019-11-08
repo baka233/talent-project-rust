@@ -1,8 +1,9 @@
 use kvsserver::*;
-use clap::{App, AppSettings, Arg, SubCommand};
+use clap::{App, AppSettings, Arg, SubCommand, ArgMatches};
+use std::process::exit;
 
-fn main() -> Result<()> {
-    let matches = App::new("kvs_client")
+fn main() {
+    let matches = App::new("kvs-client")
         .version("v1.0")
         .author(env!("CARGO_PKG_AUTHORS"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
@@ -15,8 +16,16 @@ fn main() -> Result<()> {
                             .help("he string value of key")
                             .required(true)
                 )
+                .arg(Arg::with_name("TIMES")
+                        .long("times")
+                        .takes_value(true)
+                        .value_name("SET_TIMES")
+                        .help("set the set times to test the performance")
+                )
                 .arg(Arg::with_name("ADDR")
                         .long("addr")
+                        .takes_value(true)
+                        .value_name("IPADDR")
                         .help("server address like (HOST|IP):ADDR")
                 )
         )
@@ -26,6 +35,8 @@ fn main() -> Result<()> {
                 .arg(Arg::with_name("KEY").help("a string key").required(true))
                 .arg(Arg::with_name("ADDR")
                         .long("addr")
+                        .takes_value(true)
+                        .value_name("IPADDR")
                         .help("server address like (HOST|IP):ADDR")
                 )
         )
@@ -35,18 +46,34 @@ fn main() -> Result<()> {
                 .arg(Arg::with_name("KEY").help("a string key").required(true))
                 .arg(Arg::with_name("ADDR")
                         .long("addr")
+                        .takes_value(true)
+                        .value_name("IPADDR")
                         .help("server address like (HOST|IP):ADDR")
                 )
         )
         .get_matches();
+    
+    match run(matches) {
+        Err(err) => {
+            eprintln!("error occured : {}", err);
+            exit(1);
+        },
+        _ => exit(0)
+    }
 
+}
+
+fn run(matches : ArgMatches) -> Result<()> {
     match matches.subcommand() {
         ("set", Some(matches)) => {
             let addr = matches.value_of("ADDR").unwrap_or("localhost:8900");
+            let times = matches.value_of("TIMES").unwrap_or("1").parse::<u64>().unwrap();
             let mut kvs_client = KvsClient::new(addr)?;
             let key = matches.value_of("KEY").expect("Key is not setted");
             let value = matches.value_of("VALUE").expect("Value is not setted");
-            kvs_client.set(key.to_string(), value.to_string())?;
+            for i in 0..times {
+                kvs_client.set(key.to_string(), value.to_string())?;
+            }
         },
         ("get", Some(matches)) => {
             let addr = matches.value_of("ADDR").unwrap_or("localhost:8900");
