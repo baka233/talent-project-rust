@@ -1,12 +1,12 @@
-use crate::client::KvsClient;
-use clap::*;
+use kvsserver::*;
+use clap::{App, AppSettings, Arg, SubCommand};
 
 fn main() -> Result<()> {
     let matches = App::new("kvs_client")
         .version("v1.0")
         .author(env!("CARGO_PKG_AUTHORS"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
-        .setting(AppSetting::SubcommandRequireElseHelp)
+        .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
             SubCommand::with_name("set")
                 .about("set a key-value pair")
@@ -43,22 +43,27 @@ fn main() -> Result<()> {
     match matches.subcommand() {
         ("set", Some(matches)) => {
             let addr = matches.value_of("ADDR").unwrap_or("localhost:8900");
-            let kvs_client = KvsClient::new(addr)?;
-            kvs_client.set(matches.value_of("KEY"), matches.value_of("VALUE"))?;
+            let mut kvs_client = KvsClient::new(addr)?;
+            let key = matches.value_of("KEY").expect("Key is not setted");
+            let value = matches.value_of("VALUE").expect("Value is not setted");
+            kvs_client.set(key.to_string(), value.to_string())?;
         },
         ("get", Some(matches)) => {
             let addr = matches.value_of("ADDR").unwrap_or("localhost:8900");
-            let kvs_client = KvsClient::new(addr)?;
-            match kvs_client.get(matches.value_of("KEY"))? {
+            let mut kvs_client = KvsClient::new(addr)?;
+            let key = matches.value_of("KEY").expect("Value is empty");
+            match kvs_client.get(key.to_string())? {
                 Some(value) => println!("{}", value),
                 None => println!("Key not found"),
             }
         },
         ("remove", Some(matches)) => {
             let addr = matches.value_of("ADDR").unwrap_or("localhost:8900");
-            let kvs_client = KvsClient::new(addr)?;
-            kvs_client.remove(matches.value_of("KEY"))?;           
-        }
+            let mut kvs_client = KvsClient::new(addr)?;
+            let key = matches.value_of("KEY").expect("Value is empty");
+            kvs_client.remove(key.to_string())?;           
+        },
+        _ => unreachable!(),
     };
 
     Ok(())

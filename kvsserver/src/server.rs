@@ -1,4 +1,6 @@
 use std::net::{TcpStream, TcpListener, ToSocketAddrs};
+use std::io::{Write, BufWriter};
+
 use serde_json::{self, Deserializer, Serializer};
 use crate::errors::{Result, KvsError};
 use crate::common::*;
@@ -6,14 +8,14 @@ use crate::engine::{KvsEngine, KvStore};
 
 
 /// The server of the KvStroe
-pub struct KvServer<E : KvsEngine> {
+pub struct KvsServer<E : KvsEngine> {
     engine : E, 
 }
 
-impl<E : KvsEngine> KvServer<E> {
-    /// Create new KvServer use specified engine
+impl<E : KvsEngine> KvsServer<E> {
+    /// Create new KvsServer use specified engine
     pub fn new(engine : E) -> Self {
-        KvServer {
+        KvsServer {
             engine 
         }  
     }
@@ -34,14 +36,15 @@ impl<E : KvsEngine> KvServer<E> {
     /// handler of kvserver
     pub fn handle_request(&mut self, streamer : TcpStream) -> Result<()> {
         let client_addr = streamer.peer_addr()?; 
-        let req_reader = Deserializer::from_reader(streamer).into_iter::<Request>();
+        let mut writer = BufWriter::new(&streamer);
+        let req_reader = Deserializer::from_reader(&streamer).into_iter::<Request>();
 
         macro_rules! send_response {
             ($resp : expr)  => { {
-                let resq = $resp;
-                serde_json::to_writer(streamer, $resp)?;
-                streamer.flush();
-                debug!("streamer send to {}, {:?}", client_addr, $resp);
+                let resp = $resp;
+                serde_json::to_writer(&mut writer, &resp)?;
+                writer.flush()?;
+                debug!("streamer send to {}, {:?}", client_addr, resp);
             };};
         }
 
