@@ -283,6 +283,8 @@ fn cli_access_server(engine: &str, addr: &str) {
         .success()
         .stdout(is_empty());
 
+    println!("set key2 successful");
+
     Command::cargo_bin("kvs-client")
         .unwrap()
         .args(&["rm", "key1", "--addr", addr])
@@ -310,18 +312,20 @@ fn cli_access_server(engine: &str, addr: &str) {
 
     Command::cargo_bin("kvs-client")
         .unwrap()
-        .args(&["get", "key2", "--addr", addr])
-        .current_dir(&temp_dir)
-        .assert()
-        .success()
-        .stdout(contains("value3"));
-    Command::cargo_bin("kvs-client")
-        .unwrap()
         .args(&["get", "key1", "--addr", addr])
         .current_dir(&temp_dir)
         .assert()
         .success()
         .stdout(contains("Key not found"));
+
+    Command::cargo_bin("kvs-client")
+        .unwrap()
+        .args(&["get", "key2", "--addr", addr])
+        .current_dir(&temp_dir)
+        .assert()
+        .success()
+        .stdout(contains("value3"));
+
     sender.send(()).unwrap();
     handle.join().unwrap();
 }

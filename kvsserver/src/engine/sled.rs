@@ -9,6 +9,7 @@ pub struct SledKvStore {
 impl SledKvStore {
     pub fn new<P : Into<PathBuf>>(path : P) -> Result<Self> {
         let tree = Db::open(&path.into())?;
+        tree.flush()?;
         Ok(SledKvStore {
             tree
         })
@@ -25,11 +26,15 @@ impl KvsEngine for SledKvStore {
 
     fn set(&mut self, key : String, value : String) -> Result<()> {
         self.tree.insert(key.into_bytes(), value.into_bytes())?;
+        self.tree.flush()?;
         Ok(())
     }
 
     fn remove(&mut self, key : String) -> Result<()> {
-        self.remove(key)?;
+        if let None = self.tree.remove(key)? {
+            return Err(KvsError::KeyNotFound);
+        }
+        self.tree.flush()?;
         Ok(())
     }
 }

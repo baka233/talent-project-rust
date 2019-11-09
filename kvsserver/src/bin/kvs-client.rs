@@ -4,7 +4,7 @@ use std::process::exit;
 
 fn main() {
     let matches = App::new("kvs-client")
-        .version("v1.0")
+        .version(env!("CARGO_PKG_VERSION"))
         .author(env!("CARGO_PKG_AUTHORS"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .setting(AppSettings::SubcommandRequiredElseHelp)
@@ -41,7 +41,7 @@ fn main() {
                 )
         )
         .subcommand(
-            SubCommand::with_name("remove")
+            SubCommand::with_name("rm")
                 .about("remove specified string key")
                 .arg(Arg::with_name("KEY").help("a string key").required(true))
                 .arg(Arg::with_name("ADDR")
@@ -52,6 +52,12 @@ fn main() {
                 )
         )
         .get_matches();
+
+
+    if matches.is_present("VERSION") {
+        println!("{}", env!("CARGO_PKG_VERSION"));
+        exit(0);
+    }
     
     match run(matches) {
         Err(err) => {
@@ -84,7 +90,7 @@ fn run(matches : ArgMatches) -> Result<()> {
                 None => println!("Key not found"),
             }
         },
-        ("remove", Some(matches)) => {
+        ("rm", Some(matches)) => {
             let addr = matches.value_of("ADDR").unwrap_or("localhost:8900");
             let mut kvs_client = KvsClient::new(addr)?;
             let key = matches.value_of("KEY").expect("Value is empty");
